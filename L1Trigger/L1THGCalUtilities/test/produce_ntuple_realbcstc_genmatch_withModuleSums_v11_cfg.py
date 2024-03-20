@@ -24,7 +24,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(300)
+    input = cms.untracked.int32(10)
 )
 
 process.source = cms.Source("PoolSource",
@@ -58,7 +58,8 @@ process.configurationMetadata = cms.untracked.PSet(
 # Output definition
 process.TFileService = cms.Service(
     "TFileService",
-    fileName = cms.string("/home/llr/cms/manoni/CMSSW_12_5_2_patch1/src/L1Trigger/L1THGCalUtilities/test/prod/ntuple_96Imp3_300ev.root")
+    #  fileName = cms.string("/home/llr/cms/manoni/CMSSW_12_5_2_patch1/src/L1Trigger/L1THGCalUtilities/test/prod/ntuple_96Imp3_300ev.root")
+    fileName = cms.string("ntuple.root")
     )
 
 from Configuration.AlCa.GlobalTag import GlobalTag

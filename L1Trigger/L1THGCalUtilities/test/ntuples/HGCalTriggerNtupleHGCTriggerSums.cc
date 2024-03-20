@@ -177,4 +177,5 @@ HGCalGeomRotation::WaferCentring HGCalTriggerNtupleHGCTriggerSums::getWaferCentr
         << "HGCalTriggerNtupleHGCTriggerSums: trigger sub-detector expected to be silicon";
     return HGCalGeomRotation::WaferCentring::WaferCentred;
   }
-} 
+}
+

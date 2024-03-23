@@ -1,13 +1,16 @@
 
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/HGCalCommonData/interface/HGCalGeomRotation.h"
 #include "DataFormats/L1THGCal/interface/HGCalTriggerSums.h"
 #include "DataFormats/ForwardDetId/interface/HGCalDetId.h"
 #include "DataFormats/Common/interface/AssociationMap.h"
 #include "DataFormats/ForwardDetId/interface/HGCalTriggerDetId.h"
+#include "DataFormats/ForwardDetId/interface/HGCalTriggerModuleDetId.h"
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerGeometryBase.h"
 #include "L1Trigger/L1THGCalUtilities/interface/HGCalTriggerNtupleBase.h"
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerTools.h"
 
+#include <bitset>
 class HGCalTriggerNtupleHGCTriggerSums : public HGCalTriggerNtupleBase {
 public:
   HGCalTriggerNtupleHGCTriggerSums(const edm::ParameterSet& conf);
@@ -17,6 +20,7 @@ public:
 
 private:
   void clear() final;
+  HGCalGeomRotation::WaferCentring getWaferCentring(unsigned layer, int subdet) const;
 
   HGCalTriggerTools triggerTools_;
 
@@ -29,7 +33,8 @@ private:
   std::vector<int> ts_layer_;
   std::vector<int> ts_panel_number_;
   std::vector<int> ts_panel_sector_;
-  std::vector<int> ts_wafer_;
+  std::vector<int> ts_waferu_;
+  std::vector<int> ts_waferv_;
   std::vector<int> ts_wafertype_;
   std::vector<uint32_t> ts_data_;
   std::vector<float> ts_mipPt_;
@@ -68,7 +73,8 @@ void HGCalTriggerNtupleHGCTriggerSums::initialize(TTree& tree,
   tree.Branch(withPrefix("subdet"), &ts_subdet_);
   tree.Branch(withPrefix("zside"), &ts_side_);
   tree.Branch(withPrefix("layer"), &ts_layer_);
-  tree.Branch(withPrefix("wafer"), &ts_wafer_);
+  tree.Branch(withPrefix("waferu"), &ts_waferu_);
+  tree.Branch(withPrefix("waferv"), &ts_waferv_);
   tree.Branch(withPrefix("wafertype"), &ts_wafertype_);
   tree.Branch(withPrefix("data"), &ts_data_);
   tree.Branch(withPrefix("pt"), &ts_pt_);
@@ -90,6 +96,7 @@ void HGCalTriggerNtupleHGCTriggerSums::fill(const edm::Event& e, const HGCalTrig
   triggerTools_.setGeometry(es.geometry.product());
 
   clear();
+  HGCalGeomRotation rotation(HGCalGeomRotation::SectorType::Sector120Degrees);
   for (auto ts_itr = trigger_sums.begin(0); ts_itr != trigger_sums.end(0); ts_itr++) {
     if (ts_itr->pt() > 0) {
       ts_n_++;
@@ -98,16 +105,26 @@ void HGCalTriggerNtupleHGCTriggerSums::fill(const edm::Event& e, const HGCalTrig
       ts_id_.emplace_back(ts_itr->detId());
       ts_side_.emplace_back(triggerTools_.zside(moduleId));
       ts_layer_.emplace_back(triggerTools_.layerWithOffset(moduleId));
-      if (moduleId.det() == DetId::HGCalTrigger) {
-        HGCalTriggerDetId id(moduleId);
-        ts_subdet_.emplace_back(id.subdet());
-        ts_wafertype_.emplace_back(id.type());
-      } else if (moduleId.det() == DetId::HGCalHSc) {
-        HGCScintillatorDetId id(moduleId);
-        ts_subdet_.emplace_back(id.subdet());
+      if (moduleId.subdetId() == ForwardSubdetector::HGCTrigger) {
+        HGCalTriggerModuleDetId id(moduleId);
+        int subdet(id.triggerSubdetId());
+        if (subdet == HGCalTriggerSubdetector::HGCalHScTrigger) {
+          ts_waferu_.emplace_back(id.eta());
+          ts_waferv_.emplace_back(id.phi());
+        } else {  // silicon
+          int sector = id.sector();
+          int modU = id.moduleU();
+          int modV = id.moduleV();
+          rotation.uvMappingFromSector0(getWaferCentring(id.layer(), subdet), modU, modV, sector);
+          ts_waferu_.emplace_back(modU);
+          ts_waferv_.emplace_back(modV);
+        }
+        ts_subdet_.emplace_back(subdet);
         ts_wafertype_.emplace_back(id.type());
       } else {
         ts_subdet_.emplace_back(-999);
+        ts_waferu_.emplace_back(-999);
+        ts_waferv_.emplace_back(-999);
         ts_wafertype_.emplace_back(-999);
       }
       ts_data_.emplace_back(ts_itr->hwPt());
@@ -130,7 +147,8 @@ void HGCalTriggerNtupleHGCTriggerSums::clear() {
   ts_subdet_.clear();
   ts_side_.clear();
   ts_layer_.clear();
-  ts_wafer_.clear();
+  ts_waferu_.clear();
+  ts_waferv_.clear();
   ts_wafertype_.clear();
   ts_data_.clear();
   ts_mipPt_.clear();
@@ -142,3 +160,21 @@ void HGCalTriggerNtupleHGCTriggerSums::clear() {
   ts_y_.clear();
   ts_z_.clear();
 }
+
+HGCalGeomRotation::WaferCentring HGCalTriggerNtupleHGCTriggerSums::getWaferCentring(unsigned layer, int subdet) const {
+  if (subdet == HGCalTriggerSubdetector::HGCalEETrigger) {  // CE-E
+    return HGCalGeomRotation::WaferCentring::WaferCentred;
+  } else if (subdet == HGCalTriggerSubdetector::HGCalHSiTrigger) {
+    if ((layer % 2) == 1) {  // CE-H Odd
+      return HGCalGeomRotation::WaferCentring::CornerCentredY;
+    } else {  // CE-H Even
+      return HGCalGeomRotation::WaferCentring::CornerCentredMercedes;
+    }
+  } else if (subdet == HGCalTriggerSubdetector::HFNoseTrigger) {  //HFNose
+    return HGCalGeomRotation::WaferCentring::WaferCentred;
+  } else {
+    edm::LogError("HGCalTriggerNtupleHGCTriggerSums")
+        << "HGCalTriggerNtupleHGCTriggerSums: trigger sub-detector expected to be silicon";
+    return HGCalGeomRotation::WaferCentring::WaferCentred;
+  }
+} 

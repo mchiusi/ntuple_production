@@ -9,7 +9,6 @@ import L1Trigger.L1THGCal.hgcalLayersCalibrationCoefficients_cfi as layercalibpa
 
 fcPerMip = recoparam.HGCalUncalibRecHit.HGCEEConfig.fCPerMIP
 keV2fC = digiparam.hgceeDigitizer.digiCfg.keV2fC
-layerWeights = layercalibparam.TrgLayer_dEdX_weights
 thicknessCorrections = recocalibparam.HGCalRecHit.thicknessCorrection
 
 ntuple_event = cms.PSet(
@@ -65,7 +64,7 @@ ntuple_triggercells = cms.PSet(
     FillTruthMap = cms.bool(False),
     fcPerMip = fcPerMip,
     keV2fC = keV2fC,
-    layerWeights = layerWeights,
+    layerWeights = layercalibparam.triggerWeights.weights,
     thicknessCorrections = thicknessCorrections,
     FilterCellsInMulticlusters = cms.bool(False)
 )
@@ -93,7 +92,8 @@ ntuple_multiclusters = cms.PSet(
     Multiclusters = cms.InputTag('l1tHGCalBackEndLayer2Producer:HGCalBackendLayer2Processor3DClustering'),
     EGIdentification = egamma_identification_histomax.clone(),
     FillLayerInfo = cms.bool(False),
-    FillInterpretationInfo = cms.bool(True)
+    FillInterpretationInfo = cms.bool(True),
+    FillHWClusterProperties = cms.bool(False)
 )
 
 ntuple_towers = cms.PSet(

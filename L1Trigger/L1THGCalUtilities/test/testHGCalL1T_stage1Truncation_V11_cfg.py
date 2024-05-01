@@ -32,16 +32,7 @@ process.source = cms.Source("PoolSource",
        fileNames = cms.untracked.vstring('/store/mc/Phase2HLTTDRSummer20ReRECOMiniAOD/DoublePhoton_FlatPt-1To100/FEVT/PU200_111X_mcRun4_realistic_T15_v1_ext1-v2/1210000/F2E5E947-0CB4-D245-A943-17F2F05709D3.root'),
        inputCommands=cms.untracked.vstring(
            'keep *',
-           'drop l1tEMTFHit2016Extras_simEmtfDigis_CSC_HLT',
-           'drop l1tEMTFHit2016Extras_simEmtfDigis_RPC_HLT',
-           'drop l1tEMTFHit2016s_simEmtfDigis__HLT',
-           'drop l1tEMTFTrack2016Extras_simEmtfDigis__HLT',
-           'drop l1tEMTFTrack2016s_simEmtfDigis__HLT',
-           'drop FTLClusteredmNewDetSetVector_mtdClusters_FTLBarrel_RECO',
-           'drop FTLClusteredmNewDetSetVector_mtdClusters_FTLEndcap_RECO',
-           'drop MTDTrackingRecHitedmNewDetSetVector_mtdTrackingRecHits__RECO',
-           'drop BTLDetIdBTLSampleFTLDataFrameTsSorted_mix_FTLBarrel_HLT',
-           'drop ETLDetIdETLSampleFTLDataFrameTsSorted_mix_FTLEndcap_HLT',
+           'drop l1tTkPrimaryVertexs_L1TkPrimaryVertex__RECO',
            )
        )
 
@@ -67,12 +58,11 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T15', '')
 
 # load HGCAL TPG simulation
-#process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff')
-process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitivesNew_cff')
+process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff')
 
 # Use new Stage 1 processor
-from L1Trigger.L1THGCal.customNewProcessors import custom_stage1_truncation
-process = custom_stage1_truncation(process)
+from L1Trigger.L1THGCal.customLayer1 import custom_layer1_truncationfw
+process = custom_layer1_truncationfw(process)
 
 # Switch to latest trigger geometry containing information on links mapping
 from L1Trigger.L1THGCal.customTriggerGeometry import custom_geometry_V11_Imp3
@@ -83,10 +73,8 @@ process.hgcl1tpg_step = cms.Path(process.L1THGCalTriggerPrimitives)
 
 # load ntuplizer and custom to use collections from Stag1 truncation processor
 process.load('L1Trigger.L1THGCalUtilities.hgcalTriggerNtuples_cff')
-from L1Trigger.L1THGCalUtilities.customNtuples import custom_ntuples_stage1_truncation
-from L1Trigger.L1THGCalUtilities.customNtuples import custom_ntuples_layer1_truncation
-process = custom_ntuples_stage1_truncation(process)
-#process = custom_ntuples_layer1_truncation(process)
+from L1Trigger.L1THGCalUtilities.customNtuples import custom_ntuples_layer1_truncationfw
+process = custom_ntuples_layer1_truncationfw(process)
 process.ntuple_step = cms.Path(process.L1THGCalTriggerNtuples)
 
 # Schedule definition

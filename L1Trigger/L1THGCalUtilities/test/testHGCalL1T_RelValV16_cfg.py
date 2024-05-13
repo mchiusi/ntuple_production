@@ -70,6 +70,13 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T21', ''
 # load HGCAL TPG simulation
 process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff')
 
+from L1Trigger.L1THGCal.l1tHGCalConcentratorProducer_cfi import custom_conc_proc
+parameters = custom_conc_proc.clone(stcSize = custom_conc_proc.stcSize,
+                                    type_energy_division = custom_conc_proc.type_energy_division,
+                                    fixedDataSizePerHGCROC = custom_conc_proc.fixedDataSizePerHGCROC,
+                                    Method = cms.vstring('thresholdSelect','superTriggerCellSelect','superTriggerCellSelect'),        
+)
+process.l1tHGCalConcentratorProducer.ProcessorParameters = parameters
 process.hgcl1tpg_step = cms.Path(process.L1THGCalTriggerPrimitives)
 
 

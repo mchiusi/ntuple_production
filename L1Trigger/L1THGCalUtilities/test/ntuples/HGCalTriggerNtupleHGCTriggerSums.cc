@@ -25,6 +25,7 @@ private:
   HGCalTriggerTools triggerTools_;
 
   edm::EDGetToken trigger_sums_token_;
+  unsigned scintillatorModulesPerSector_ = 12;
 
   int ts_n_;
   std::vector<uint32_t> ts_id_;
@@ -50,7 +51,8 @@ private:
 DEFINE_EDM_PLUGIN(HGCalTriggerNtupleFactory, HGCalTriggerNtupleHGCTriggerSums, "HGCalTriggerNtupleHGCTriggerSums");
 
 HGCalTriggerNtupleHGCTriggerSums::HGCalTriggerNtupleHGCTriggerSums(const edm::ParameterSet& conf)
-    : HGCalTriggerNtupleBase(conf) {
+    : HGCalTriggerNtupleBase(conf),
+      scintillatorModulesPerSector_(conf.getParameter<unsigned>("ScintillatorModulesPerSector")) {
   accessEventSetup_ = false;
 }
 
@@ -109,8 +111,9 @@ void HGCalTriggerNtupleHGCTriggerSums::fill(const edm::Event& e, const HGCalTrig
         HGCalTriggerModuleDetId id(moduleId);
         int subdet(id.triggerSubdetId());
         if (subdet == HGCalTriggerSubdetector::HGCalHScTrigger) {
+          int phi = id.phi() + scintillatorModulesPerSector_*id.sector();
           ts_waferu_.emplace_back(id.eta());
-          ts_waferv_.emplace_back(id.phi());
+          ts_waferv_.emplace_back(phi);
         } else {  // silicon
           int sector = id.sector();
           int modU = id.moduleU();

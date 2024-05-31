@@ -402,11 +402,8 @@ HGCalTriggerGeometryBase::geom_set HGCalTriggerGeometryV9Imp3::getTriggerCellsFr
     } else {
       ieta0 = ieta0 + 1;
     }
-    iphi0 = (iphi0 * hSc_tcs_per_module_phi_) + hSc_tc_layer0_min_ + 1;
-    int total_tcs = hSc_num_panels_per_sector_ * hSc_tcs_per_module_phi_ * nSectors_;
-    if (iphi0 > total_tcs) {
-      iphi0 = iphi0 - total_tcs;
-    }
+    int total_tcs = hSc_tcs_per_sector_ * nSectors_;
+    iphi0 = ((iphi0-1) * hSc_tcs_per_module_phi_ + 1) % total_tcs;
 
     int hSc_tcs_per_module_eta = (layer > hSc_layer_for_split_) ? hSc_back_layers_split_ : hSc_front_layers_split_;
 
@@ -556,7 +553,13 @@ unsigned HGCalTriggerGeometryV9Imp3::getLinksInModule(const unsigned module_id) 
   else {
     int packed_module =
         packLayerSubdetWaferId(module_det_id.layer(), subdet, module_det_id.moduleU(), module_det_id.moduleV());
-    links = links_per_module_.at(packed_module);
+
+    auto links_itr = links_per_module_.find(packed_module);
+    if(!keepModulesNotInMapping_ && links_itr==links_per_module_.end()) {
+      throw cms::Exception("OutOfRange") << "Cannot find number of links connected to module "<<module_det_id<<"\n";
+    }
+    if(links_itr!=links_per_module_.end())
+      links = links_itr->second;
   }
   return links;
 }
@@ -943,14 +946,7 @@ void HGCalTriggerGeometryV9Imp3::unpackLayerSubdetWaferId(
 }
 
 void HGCalTriggerGeometryV9Imp3::etaphiMappingFromSector0(int& ieta, int& iphi, unsigned sector) const {
-  if (sector == 0) {
-    return;
-  }
-  if (sector == 2) {
-    iphi = iphi + hSc_num_panels_per_sector_;
-  } else if (sector == 1) {
-    iphi = iphi + (2 * hSc_num_panels_per_sector_);
-  }
+  iphi += hSc_num_panels_per_sector_*sector;
 }
 
 HGCalGeomRotation::WaferCentring HGCalTriggerGeometryV9Imp3::getWaferCentring(unsigned layer, int subdet) const {

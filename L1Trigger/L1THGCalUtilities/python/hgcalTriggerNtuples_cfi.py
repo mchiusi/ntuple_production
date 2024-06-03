@@ -112,6 +112,7 @@ l1tHGCalTriggerNtuplizer = cms.EDAnalyzer(
         ntuple_digis,
         ntuple_triggercells,
         ntuple_triggersums,
+        ntuple_clusters,
         ntuple_multiclusters,
         ntuple_towers
     )

@@ -1,4 +1,10 @@
+import FWCore.ParameterSet.VarParsing as VarParsing
 import FWCore.ParameterSet.Config as cms
+
+options = VarParsing.VarParsing ('analysis')
+options.outputFile = 'NTuple.root'
+options.inputFiles = []
+options.parseArguments()
 
 from Configuration.Eras.Era_Phase2C17I13M9_cff import Phase2C17I13M9
 process = cms.Process('DIGI',Phase2C17I13M9)
@@ -24,7 +30,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(50)
+    input = cms.untracked.int32(-1)
 )
 
 # Input source
@@ -48,7 +54,7 @@ process.configurationMetadata = cms.untracked.PSet(
 # Output definition
 process.TFileService = cms.Service(
     "TFileService",
-    fileName = cms.string("ntuple.root")
+    fileName = cms.string(options.outputFile)
     )
 
 # Other statements
@@ -58,6 +64,13 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T21', ''
 # load HGCAL TPG simulation
 process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff')
 
+from L1Trigger.L1THGCal.l1tHGCalConcentratorProducer_cfi import custom_conc_proc
+parameters = custom_conc_proc.clone(stcSize = custom_conc_proc.stcSize,
+                                    type_energy_division = custom_conc_proc.type_energy_division,
+                                    fixedDataSizePerHGCROC = custom_conc_proc.fixedDataSizePerHGCROC,
+                                    Method = cms.vstring('thresholdSelect','superTriggerCellSelect','superTriggerCellSelect'),        
+)
+process.l1tHGCalConcentratorProducer.ProcessorParameters = parameters
 process.hgcl1tpg_step = cms.Path(process.L1THGCalTriggerPrimitives)
 
 
